@@ -68,23 +68,43 @@ Use the Neon **development** branch credentials in the ignored root `.env.local`
 
 ```sh
 mise exec -- just verify
-mise exec -- just db-check
 ```
 
-`verify` runs offline checks, unit tests, a production build, browser tests, and PostgreSQL 18 integration tests. A running Docker engine is needed for the disposable test database; CI provides its own PostgreSQL service. `db-check` separately checks the configured Neon branch using both TypeScript and Rust.
+`verify` runs formatting, lint, types, architecture/documentation checks, Clippy
+and unit tests. It needs no Next.js build, browser, Docker or live credentials.
+Run focused checks for the affected behavior while developing.
 
-| Command            | Purpose                                                    |
-| ------------------ | ---------------------------------------------------------- |
-| `just setup`       | Install locked JS/Rust dependencies and Chromium           |
-| `just doctor`      | Check local tools and CLI configuration                    |
-| `just dev`         | Start the API and website                                  |
-| `just check`       | Formatting, lint, types, architecture, docs, Clippy        |
-| `just test`        | Unit, PostgreSQL, development and production browser tests |
-| `just build`       | Build website, API and CLI without live credentials        |
-| `just db-check`    | Read-only Neon HTTP and direct PostgreSQL diagnostics      |
-| `just db-generate` | Generate a Drizzle migration from schema changes           |
-| `just db-migrate`  | Apply committed migrations using a direct connection       |
-| `just format`      | Format TypeScript, documentation, and Rust                 |
+`just test-smoke` builds the application and runs eight existing production
+journeys on desktop/mobile (16 executions). Run `just setup-browser` first;
+Docker supplies disposable PostgreSQL 18 for the real API/browser harness.
+`just test-db` checks database contracts when backend, schema or test tooling changes.
+`just verify-full` retains the exhaustive suite, including development/production
+browser journeys and all three data-failure states, for explicit use.
+Use `just db-check` only when diagnosing connectivity to the configured Neon
+branch; it is separate from routine verification.
+
+CI checks only Markdown formatting and local links for documentation-only changes.
+Application changes run checks, unit tests, a build and the production smoke;
+backend/schema/tooling/configuration changes also run database contracts.
+Use **Actions → CI → Run workflow** for exhaustive verification without deployment.
+See [repository workflow](docs/harness.md) for change selection and fallback rules.
+
+| Command              | Purpose                                                    |
+| -------------------- | ---------------------------------------------------------- |
+| `just setup`         | Install locked JS/Rust dependencies                        |
+| `just setup-browser` | Install Chromium for browser tests                         |
+| `just verify`        | Fast checks and all unit tests                             |
+| `just test-smoke`    | Production build and 16 essential browser executions       |
+| `just verify-full`   | Opt-in exhaustive verification                             |
+| `just doctor`        | Check local tools and CLI configuration                    |
+| `just dev`           | Start the API and website                                  |
+| `just check`         | Formatting, lint, types, architecture, docs, Clippy        |
+| `just test`          | Unit, PostgreSQL, development and production browser tests |
+| `just build`         | Build website, API and CLI without live credentials        |
+| `just db-check`      | Read-only Neon HTTP and direct PostgreSQL diagnostics      |
+| `just db-generate`   | Generate a Drizzle migration from schema changes           |
+| `just db-migrate`    | Apply committed migrations using a direct connection       |
+| `just format`        | Format TypeScript, documentation, and Rust                 |
 
 Raw ingestion commands and archive recovery are documented in [ingestion](docs/ingestion.md).
 

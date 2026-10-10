@@ -1,7 +1,7 @@
 # Verification status
 
-Reviewed on 2026-10-09 (Asia/Shanghai), including the CI follow-up local
-diff on `8f08c19`. Earlier evidence below retains its own tested revisions.
+Verification workflow reviewed on 2026-10-11 (Asia/Shanghai), with local
+validation against `bc4da92`. Earlier evidence below retains its own tested revisions.
 This page summarizes coverage and outstanding limits. Detailed past results live
 in the [historical verification log](quality/history-through-2026-10-07.md).
 A checked-in implementation, a local pass, remote CI, publication and production
@@ -9,20 +9,46 @@ health are separate observations; none establishes Google indexing or freshness.
 
 ## Current coverage
 
-| Area                      | Executable evidence                                                                                                              | Remaining limit                                                                                         |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Architecture              | Import graph and Cargo dependency checks in `just check`; regression cases under `scripts/tests`                                 | Does not prove all side effects or statistical semantics                                                |
-| Documentation             | Required entry points, local link targets, top-level document indexing and the 110-line AGENTS limit in `scripts/check-docs.mjs` | No anchor, external-link, semantic freshness or full nested-index validation                            |
-| Domain and HTTP contracts | TypeScript/Rust unit tests and `just test-db` against real Drizzle migrations and the Rust binary on disposable PostgreSQL 18    | Synthetic records establish behavior, not current official source coverage                              |
-| Browser journeys          | Chromium desktop/mobile in development and production; separate unconfigured, empty and unavailable production cases             | Safari, Firefox and manual screen-reader coverage remain UI-001                                         |
-| Search discovery          | Metadata, crawler HTML, no-JavaScript formation navigation, sitemaps and unavailable-source cases                                | Search Console ownership, processing and search-performance evidence remain SEO-001                     |
-| Cloudflare delivery       | OpenNext build, Worker dry runs and image build; main-only deployment after verification; public data smoke                      | `just verify` does not run `just cf-check` or the public smoke; publication can precede a failing smoke |
-| Ingestion and provenance  | Archive/replay, source-shape, transaction and concurrency checks                                                                 | Imports are manual; live source/schema drift and remote archive backup need separate checks             |
-| UI and local preparation  | Browser tests cover navigation, hydration readiness, chart equivalents, lists, sharing and storage failures                      | Historical visual review is scoped to the recorded change, not a fresh audit of every screen            |
+The current validation commands separate daily checks (`just verify`) from
+production smoke (`just test-smoke`) and opt-in exhaustive verification
+(`just verify-full`). Historical `just verify` results below refer to the old
+exhaustive command, not the current fast command. See [CI selection](harness.md#ci-selection).
+
+| Area                      | Executable evidence                                                                                                                      | Remaining limit                                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Architecture              | Import graph and Cargo dependency checks in `just check`; regression cases under `scripts/tests`                                         | Does not prove all side effects or statistical semantics                                                       |
+| Documentation             | Required entry points, local link targets, top-level document indexing and the 110-line AGENTS limit in `scripts/check-docs.mjs`         | No anchor, external-link, semantic freshness or full nested-index validation                                   |
+| Domain and HTTP contracts | TypeScript/Rust unit tests and `just test-db` against real Drizzle migrations and the Rust binary on disposable PostgreSQL 18            | Synthetic records establish behavior, not current official source coverage                                     |
+| Browser journeys          | Eight production smoke journeys on desktop/mobile in automatic CI; development/production and three failure states in `just verify-full` | Safari, Firefox and manual screen-reader coverage remain UI-001                                                |
+| Search discovery          | Metadata, crawler HTML, no-JavaScript formation navigation, sitemaps and unavailable-source cases                                        | Search Console ownership, processing and search-performance evidence remain SEO-001                            |
+| Cloudflare delivery       | OpenNext build, Worker dry runs and image build; main-only deployment after verification; public data smoke                              | Neither verification command runs `just cf-check` or the public smoke; publication can precede a failing smoke |
+| Ingestion and provenance  | Archive/replay, source-shape, transaction and concurrency checks                                                                         | Imports are manual; live source/schema drift and remote archive backup need separate checks                    |
+| UI and local preparation  | Browser tests cover navigation, hydration readiness, chart equivalents, lists, sharing and storage failures                              | Historical visual review is scoped to the recorded change, not a fresh audit of every screen                   |
 
 See [repository workflow](harness.md) for commands and maintenance rules,
 [development](development.md) for isolation, and [technical debt](exec-plans/tech-debt.md)
 for follow-up triggers.
+
+## Lean verification validation (2026-10-11)
+
+On the local diff against `bc4da92`, `just verify` passed checks, 115 TypeScript
+cases, 11 Node cases and the Rust suites. `just test-smoke` passed all eight
+selected journeys on desktop/mobile (16 executions in 18.0 seconds, excluding
+build time). An intentional unavailable-server run of the existing landing smoke
+failed with exit code 1, confirming that the selection does not hide failures.
+
+`CI=true E2E_PORT=3592 mise exec -- just verify-full` passed the checks/unit suites,
+PostgreSQL 18 contracts and 366 browser executions: 175 development, 173 production,
+and six for each of unconfigured, empty and unavailable. Eight existing exclusions
+remain intentional. The development/production browser passes took 2.7/1.7 minutes
+on this machine. `just check-docs`, selector/CLI checks and `git diff --check` passed.
+The installed actionlint passes after excluding its unsupported pre-existing
+`concurrency.queue` diagnostic, also reproduced on the unchanged baseline workflow.
+
+Evidence: `.artifacts/lean-verification/` and the [completed plan](exec-plans/completed/lean-verification.md).
+The reference GitHub verification took 17 minutes; local timings do not establish
+CI speed. No remote run or deployment was performed. The target of under five
+minutes for ordinary frontend CI remains unmeasured.
 
 ## Evidence at this refresh
 

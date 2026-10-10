@@ -87,6 +87,15 @@ transactional failure behavior, not a general production rollback strategy.
 
 ## Local tests and isolation
 
+`just setup` installs locked JS/Rust dependencies. Browser installation is separate:
+run `just setup-browser` when you need Chromium. The daily `just verify` command
+runs checks and unit tests without a Next.js build, browser or PostgreSQL.
+Use `just test-browser <spec>` for focused development journeys or `just test-smoke`
+for a production build and the 16 essential desktop/mobile executions.
+Use `just test-db` for backend/schema/tooling changes and `just verify-full` for
+explicit exhaustive validation. The latter preserves the former `just verify`
+coverage. CI selection is documented in [repository workflow](harness.md).
+
 `just test-db` starts a uniquely named PostgreSQL 18 container on a random
 loopback port, or uses an explicitly provided local `TEST_DATABASE_URL`.
 The shared harness creates a unique `gradavia_ingest_<uuid>` database so generated

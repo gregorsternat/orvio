@@ -84,6 +84,8 @@ Use the following commands for preparation:
 
 ```sh
 mise exec -- just verify
+mise exec -- just setup-browser
+mise exec -- just test-smoke
 mise exec -- just cf-check
 mise exec -- just cf-api-image
 ```
@@ -135,15 +137,22 @@ disabled; only the web Worker owns custom domains.
 ## Automatic main releases
 
 The GitHub Actions `CI` workflow verifies pull requests and pushes to `main`.
-Only a successful main push can enter the `Deploy production` job. Pull requests
-never receive the deployment token or publish Workers.
+Only a successful main application push can enter the `Deploy production` job.
+Documentation-only pushes skip deployment. Pull requests and manual exhaustive
+runs never publish Workers or receive the deployment token. Automatic verification
+runs checks, unit tests, build and production smoke, plus database contracts for
+backend/schema/tooling changes; see [CI selection](harness.md#ci-selection).
+The manual **CI → Run workflow** action runs `just verify-full` without deployment.
+The deployment job explicitly installs Chromium for its public production smoke.
 
 The production job builds and dry-runs both Workers and the Linux container
 before publishing. Releases share a non-cancelling concurrency group with `queue: max` so a new
 push cannot interrupt the API/website pair or replace a pending release. Immediately before publishing, the
-job checks that its commit is still the current main revision; superseded runs
-skip publication. Main verification is grouped by commit so an old rerun cannot
-cancel verification of a newer main commit. The private API is published first, followed by the prebuilt
+job checks that its application revision is still current: later application
+changes supersede it, but later documentation-only commits do not cancel its
+publication. Missing history or a rewritten branch skips publication. Main
+verification is grouped by commit so an old rerun cannot cancel verification of
+a newer main commit. The private API is published first, followed by the prebuilt
 website. The final browser smoke requires real positive formation results and a
 formation detail with provenance, in addition to health and canonical routing.
 
@@ -171,7 +180,7 @@ No local Wrangler login or manual publishing command is needed for that path.
 
 ## Release checks
 
-1. Run `just verify` and the Cloudflare-specific build/dry-run checks.
+1. Run `just verify`, `just test-smoke`, relevant database contracts and the Cloudflare-specific build/dry-run checks.
 2. Build the Linux/amd64 API image and check its liveness and database readiness.
 3. Verify that the dedicated reader can read published releases and cannot write
    source tables, change schemas or inherit a privileged role.

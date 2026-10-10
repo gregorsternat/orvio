@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -16,34 +17,50 @@ jobs:
     concurrency:
       group: ci-verify-${{ github.event_name == 'push' && github.sha || github.ref }}
       cancel-in-progress: true
+    outputs:
+      docs_only: ${{ steps.changes.outputs.docs_only }}
     env:
       CI: true
       NEXT_TELEMETRY_DISABLED: 1
-      TEST_DATABASE_URL: postgresql://gradavia:gradavia@127.0.0.1:5432/gradavia_test
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: gradavia
-          POSTGRES_PASSWORD: gradavia
-          POSTGRES_DB: gradavia_test
-        ports: [5432:5432]
-        options: >-
-          --health-cmd "pg_isready -h 127.0.0.1 -U gradavia -d gradavia_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - name: Select validation from the Git comparison
+        id: changes
+        run: node scripts/ci-changes.mjs
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
-      - name: Install pinned Rust toolchain
-        run: rustup show active-toolchain
-      - name: Install locked dependencies
-        run: just setup
-      - name: Install browser system dependencies
-        run: pnpm exec playwright install-deps chromium
-      - name: Check, build and test
-        run: just verify
+      - name: Install JavaScript dependencies
+        run: just setup-js
+      - name: Check documentation only
+        if: steps.changes.outputs.docs_only == 'true'
+        run: just check-docs
+      - name: Install pinned Rust dependencies
+        if: steps.changes.outputs.docs_only != 'true'
+        run: |
+          rustup show active-toolchain
+          cargo fetch --locked
+      - name: Check formatting, types and boundaries
+        if: steps.changes.outputs.docs_only != 'true' && github.event_name != 'workflow_dispatch'
+        run: just check
+      - name: Run unit tests
+        if: steps.changes.outputs.docs_only != 'true' && github.event_name != 'workflow_dispatch'
+        run: just test-unit
+      - name: Run database contracts
+        if: steps.changes.outputs.database == 'true' && github.event_name != 'workflow_dispatch'
+        run: just test-db
+      - name: Install Chromium and system dependencies
+        if: steps.changes.outputs.docs_only != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build without credentials
+        if: steps.changes.outputs.docs_only != 'true' && github.event_name != 'workflow_dispatch'
+        run: just build
+      - name: Run production smoke journeys
+        if: steps.changes.outputs.docs_only != 'true' && github.event_name != 'workflow_dispatch'
+        run: env -u E2E_STATE E2E_PRODUCTION=1 pnpm test:e2e --grep @smoke
+      - name: Run exhaustive verification on demand
+        if: github.event_name == 'workflow_dispatch'
+        run: just verify-full
       - name: Preserve diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -57,7 +74,7 @@ jobs:
   deploy:
     name: Deploy production
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -75,25 +92,22 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
       - name: Install locked dependencies
         run: just setup
-      - name: Install browser system dependencies
-        run: pnpm exec playwright install-deps chromium
+      - name: Install Chromium for the public production smoke
+        run: pnpm exec playwright install --with-deps chromium
       - name: Build and validate both releases before publishing
         run: just cf-check cf-api-image
-      - name: Check this commit is still main
+      - name: Check this application release is still current
         id: release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           latest_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
-          if [ "$latest_sha" = "$GITHUB_SHA" ]; then
-            echo "current=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::A newer commit is on main; this release is skipped."
-          fi
+          git fetch origin "$latest_sha"
+          LATEST_SHA="$latest_sha" node scripts/ci-changes.mjs --release
       - name: Publish the private API, then the prebuilt website
         if: steps.release.outputs.current == 'true'
         env:
