@@ -287,7 +287,7 @@ test("mobile navigation cancels deferred focus when closed before becoming visib
   await expect(trigger).toBeFocused();
 });
 
-test("navigation collapses on desktop and behaves as a modal on mobile", async ({
+test("navigation collapses on desktop and behaves as a modal on mobile @smoke", async ({
   page,
   isMobile,
 }) => {

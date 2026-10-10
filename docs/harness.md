@@ -31,7 +31,8 @@ version inventory in prose.
    steps and observable acceptance criteria. Small corrections need no extra plan.
 3. Implement the smallest complete change. Run focused checks while iterating;
    retain useful failure traces and avoid testing copies of the implementation.
-4. Run `mise exec -- just verify` before delivery. UI changes also require real
+4. Run `mise exec -- just verify` (checks and unit tests) before delivery, plus
+   focused tests of the affected behavior. UI changes also require real
    desktop/mobile inspection and relevant keyboard interactions. For hosting
    changes, use the separate Cloudflare checks in the deployment guide.
 5. Review the diff, update affected contracts and evidence, then move completed
@@ -51,8 +52,13 @@ Do not turn a feasibility suggestion into an active plan without that direction.
   PostgreSQL 18, including source publication and reader permissions.
 - `just test-e2e`: credential-free builds, development/production Chromium
   journeys and the three production data-failure states. Retries are zero.
-- `just verify`: `check` and the complete `test` chain above. It requires an
-  installed toolchain, dependencies, Chromium and a disposable PostgreSQL runtime.
+- `just verify`: `check` and `test-unit`, without Next.js builds, browsers or databases.
+- `just test-smoke`: a credential-free build and eight `@smoke` production journeys
+  on desktop/mobile (16 executions, zero retries), using the real API and disposable PostgreSQL.
+- `just verify-full`: `check` and the complete `test` chain above, on demand.
+  Install Chromium with `just setup-browser`; Docker supplies disposable PostgreSQL.
+- `just check-docs`: Markdown formatting and local documentation links only.
+  `just setup-js` installs its dependencies without Rust or Chromium.
 - `just cf-check`: OpenNext build and Worker dry runs, including the API image;
   `just cf-api-image` explicitly builds the Linux image. These do not publish.
 - `just db-check`: read-only connectivity to the explicitly configured Neon
@@ -62,6 +68,36 @@ The documentation checker verifies required entry points, existing local link
 targets, top-level index membership and AGENTS length. It does not validate link
 fragments, external pages, prose accuracy, freshness dates or every nested index.
 Architecture checks do not prove all feature-layer purity or statistical correctness.
+
+## CI selection
+
+`Verify repository` remains the validation job for pull requests and main pushes.
+Checks, unit tests, database contracts, build and smoke have separate timed steps.
+The selector compares the PR head with its merge base against the event's base SHA;
+main pushes compare the event's exact before/after SHAs. Renames include both old
+and new paths. Missing commits/events, invalid comparisons, empty diffs and unknown
+events select all automatic checks, never a successful skip.
+
+- Documentation-only means Markdown at the root, under `docs/` or `.github/`,
+  or an `AGENTS.md`. Run `just check-docs`; skip the build, browsers and deployment.
+- Ordinary `apps/web/src/`, `apps/web/public/` and `tests/browser/*.spec.ts` changes
+  run `just verify`, a credential-free build and production `@smoke` tests.
+- Other paths also run `just test-db`: Rust, schema/migrations, API Worker,
+  scripts/fixtures, manifests, lockfiles, workflows and build/test configuration.
+  Unknown paths conservatively receive these checks too.
+
+The smoke covers landing search, responsive/keyboard navigation, formation detail
+and missingness, persisted favorites, shareable same-campaign comparison,
+workspace drafts/history, failed-panel recovery, and robots/sitemaps.
+Other journeys remain in the exhaustive suite and can be selected locally.
+
+The manual **CI → Run workflow** action runs `just verify-full` and never deploys.
+There is no scheduled exhaustive run. Main application pushes use the same
+selective validation before the existing Cloudflare release checks and public smoke.
+Later documentation-only main commits do not cancel an application release already
+waiting to publish; later application commits still supersede it.
+Browser harnesses own their disposable databases/containers; documentation-only
+runs do not start PostgreSQL. CI retains failure artifacts for seven days.
 
 ## Prevent documentation drift
 

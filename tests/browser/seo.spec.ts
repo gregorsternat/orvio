@@ -5,7 +5,7 @@ const locations = (xml: string) =>
   [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]!);
 const localPath = (url: string) => new URL(url).pathname + new URL(url).search;
 
-test("robots and all advertised sitemaps expose the complete published fixture campaigns", async ({
+test("robots and all advertised sitemaps expose the complete published fixture campaigns @smoke", async ({
   request,
 }) => {
   const robots = await request.get("/robots.txt");

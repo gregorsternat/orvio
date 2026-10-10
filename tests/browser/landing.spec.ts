@@ -164,7 +164,7 @@ test("shared campaign links from the former home retain their campaign in the ob
   );
 });
 
-test("landing search carries accented words and spaces into a shareable explorer query", async ({
+test("landing search carries accented words and spaces into a shareable explorer query @smoke", async ({
   page,
 }) => {
   await page.goto("/");

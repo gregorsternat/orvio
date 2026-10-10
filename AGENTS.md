@@ -37,8 +37,9 @@ This file is a map. Keep detailed rules and evidence in the linked documents.
 1. Inspect the affected code and current behavior.
 2. Write or update an execution plan for work spanning multiple boundaries.
 3. Make the smallest complete change and run focused checks.
-4. Run `just verify` before delivery. For UI changes, inspect the real browser
-   at desktop and mobile widths and exercise relevant keyboard interactions.
+4. Run `just verify` (checks/unit tests) and relevant focused tests before delivery.
+   Use `just verify-full` for opt-in exhaustive validation. For UI changes, inspect
+   the real browser at desktop and mobile widths and exercise relevant keyboard interactions.
 5. Inspect the diff for accidental files, secrets, and stale documentation.
 6. Report test results and limitations. Local success, remote CI, merge, and
    deployment are separate states.

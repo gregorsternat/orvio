@@ -4,10 +4,15 @@ set dotenv-filename := ".env.local"
 default:
     @just --list
 
-# Install the locked dependencies and browser used by this checkout.
-setup:
-    pnpm install --frozen-lockfile
+# Install locked dependencies without downloading a browser.
+setup: setup-js
     cargo fetch --locked
+
+setup-js:
+    pnpm install --frozen-lockfile
+
+# Install Chromium explicitly when running browser checks.
+setup-browser:
     pnpm exec playwright install chromium
 
 # Inspect prerequisites without connecting to external services.
@@ -56,6 +61,11 @@ check:
     cargo fmt --all -- --check
     cargo clippy --workspace --all-targets --locked -- -D warnings
 
+# Documentation-only validation needs neither Rust nor a browser/database.
+check-docs:
+    pnpm exec prettier --check '**/*.md'
+    pnpm check:docs
+
 test-unit:
     pnpm test:unit
     cargo test --workspace --locked
@@ -80,6 +90,10 @@ test-e2e: build
     E2E_PRODUCTION=1 E2E_STATE=empty pnpm test:e2e
     E2E_PRODUCTION=1 E2E_STATE=unavailable pnpm test:e2e
 
+# Eight existing journeys in production, on desktop and mobile.
+test-smoke: build
+    env -u E2E_STATE E2E_PRODUCTION=1 pnpm test:e2e --grep @smoke
+
 # Full test suite, including disposable PostgreSQL and browser tests.
 test: test-unit test-db test-e2e
 
@@ -103,7 +117,11 @@ format:
     pnpm format
     cargo fmt --all
 
-verify: check test
+# Daily feedback: no Next.js build, browser or database.
+verify: check test-unit
+
+# Opt-in exhaustive validation; preserves the original verification chain.
+verify-full: check test
 
 # Build the Cloudflare website without database credentials or a live API.
 cf-build:

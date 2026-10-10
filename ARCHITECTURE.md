@@ -218,7 +218,8 @@ official Next.js and the Rust binary directly.
 The initial container count is bounded and idle shutdown is configured.
 `gradavia.com` is the canonical web domain. See [deployment](docs/deployment.md)
 for account prerequisites, production credentials and verified release evidence.
-GitHub Actions gates main releases on the full verification job, serializes
+GitHub Actions gates main application releases on selective verification (checks,
+unit tests, production smoke and database contracts when relevant), serializes
 production publication and checks the public data path afterward. The deployment
 token is isolated from verification/builds; the database secret stays in Cloudflare.
 See [decisions](docs/decisions.md) and [data contract](docs/data-contract.md).

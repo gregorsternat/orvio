@@ -345,7 +345,7 @@ test("keyboard and reduced motion preserve search and filter access", async ({
   await expect(page.getByRole("status")).toContainText("1 résultat");
 });
 
-test("formation details preserve zero and masked values with history and definitions", async ({
+test("formation details preserve zero and masked values with history and definitions @smoke", async ({
   page,
 }) => {
   await page.goto("/formations?q=Droit+02&vue=cartes");
@@ -383,7 +383,7 @@ test("formation details preserve zero and masked values with history and definit
   ).toContainText("Masqué");
 });
 
-test("favorites persist through reload and can be removed from the saved page", async ({
+test("favorites persist through reload and can be removed from the saved page @smoke", async ({
   page,
 }) => {
   await page.goto("/formations?q=Droit+01&vue=cartes");
@@ -484,7 +484,7 @@ test("selections saved before the rename survive and new empty selections take p
   ).toEqual({ favorites: [], comparison: [] });
 });
 
-test("comparison is shareable, exports its values and blocks mixed campaign selection", async ({
+test("comparison is shareable, exports its values and blocks mixed campaign selection @smoke", async ({
   page,
 }) => {
   await page.goto("/formations?q=Droit&vue=cartes");

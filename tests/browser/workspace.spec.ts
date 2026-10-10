@@ -13,7 +13,7 @@ async function openWorkspace(page: Page, path: string) {
   ).toHaveAttribute("tabindex", "-1");
 }
 
-test("project tabs preserve drafts, use native history and avoid repeated reads", async ({
+test("project tabs preserve drafts, use native history and avoid repeated reads @smoke", async ({
   page,
 }) => {
   await openWorkspace(page, "/favoris");
@@ -77,7 +77,7 @@ test("legacy tools redirect to their rendered, shareable panel", async ({
   ).toHaveAttribute("aria-selected", "true");
 });
 
-test("a failed first panel load leaves other tabs usable and can be retried", async ({
+test("a failed first panel load leaves other tabs usable and can be retried @smoke", async ({
   page,
 }) => {
   await openWorkspace(page, "/favoris");

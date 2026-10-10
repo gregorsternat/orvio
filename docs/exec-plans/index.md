@@ -10,6 +10,9 @@ No active execution plan.
 
 ## Completed
 
+- [Lean verification](completed/lean-verification.md): fast local checks, selective CI
+  and on-demand exhaustive coverage.
+
 - [Arc copy buttons](completed/arc-copy-buttons.md): source-owned registry integration
   and consistent clipboard actions.
 
